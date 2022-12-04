@@ -27,7 +27,7 @@ export interface Payload {
 export interface Parameters {
     action: "next"
     messages: {
-        id: string //"4686a850-4888-41fe-b52b-11dd2e3b1b2d";
+        id: string
         role: "user"
         content: {
             content_type: "text"
@@ -35,8 +35,8 @@ export interface Parameters {
         }
     }[]
 
-    // conversation_id?: string // "8b839441-2353-4a95-919e-f49f7304aeb4"
-    parent_message_id: string // "ac82627e-889b-4591-80f0-de3370b3204a"
+    conversation_id?: string
+    parent_message_id: string
     model: "text-davinci-002-render"
 }
 
@@ -44,6 +44,8 @@ export class Chat {
     private readonly url = "https://chat.openai.com/backend-api/conversation"
     private readonly decoder = new TextDecoder("utf-8")
     private token = ""
+    private conversation_id?: string = undefined
+    private parent_message_id = crypto.randomUUID()
 
     session = async () => {
         const url = "https://chat.openai.com/api/auth/session"
@@ -91,6 +93,7 @@ export class Chat {
 
                     if (payload.message.content.parts.length > 0) {
                         onReply(payload.message.content.parts[0])
+                        this.conversation_id = payload.conversation_id
                     }
                 } catch {}
             }
@@ -104,7 +107,7 @@ export class Chat {
             action: "next",
             messages: [
                 {
-                    id: "820383e9-e2b8-40a3-b8d6-7c8824514236",
+                    id: crypto.randomUUID(),
                     role: "user",
                     content: {
                         content_type: "text",
@@ -112,8 +115,8 @@ export class Chat {
                     },
                 },
             ],
-            // conversation_id: "",
-            parent_message_id: "a4fc05e8-938b-4cce-81c2-6479ce928e67",
+            conversation_id: this.conversation_id,
+            parent_message_id: this.parent_message_id,
             model: "text-davinci-002-render",
         }
     }

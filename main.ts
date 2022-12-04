@@ -1,17 +1,47 @@
 import { Chat } from "./chat.ts"
-import { Input, tty } from "./deps.ts"
+import { createBot, Intents, startBot, configSync } from "./deps.ts"
+configSync({ export: true })
+
+const DISCORD_TOKEN = Deno.env.get("DISCORD_TOKEN")!
 
 const chat = new Chat()
 
 await chat.session()
 
-while (true) {
-    const message = await Input.prompt("You")
+const bot = createBot({
+    token: DISCORD_TOKEN,
+    intents: Intents.Guilds | Intents.GuildMessages | Intents.MessageContent | Intents.GuildMembers,
+    events: {
+        ready() {
+            console.log("Successfully connected to gateway")
+        },
+    },
+})
 
-    await chat.send(message, (message) => {
-        tty.cursorMove(-1000, 0).text(message)
+bot.events.messageCreate = async (b, message) => {
+    if (message.isFromBot) {
+        return
+    }
+
+    const replies: string[] = []
+
+    console.log("User: ", message.content)
+
+    const loading = await b.helpers.sendMessage(message.channelId, {
+        content: "Thinking...",
     })
 
-    // 改行
-    console.log()
+    await chat.send(message.content, (m) => {
+        replies.push(m)
+    })
+
+    const reply = replies[replies.length - 1]
+
+    console.log("BOT: ", reply)
+
+    await b.helpers.editMessage(message.channelId, loading.id, {
+        content: reply,
+    })
 }
+
+await startBot(bot)
